@@ -38,16 +38,17 @@ public class TestAll extends TestCase {
     public static Test suite() {
         TestSuite suite = new TestSuite();
         
-        suite.addTest(TestBuddhistChronology.suite());
-        suite.addTest(TestCopticChronology.suite());
-        suite.addTest(TestEthiopicChronology.suite());
-        suite.addTest(TestGJChronology.suite());
-        suite.addTest(TestGregorianChronology.suite());
-        suite.addTest(TestIslamicChronology.suite());
-        suite.addTest(TestJulianChronology.suite());
-        suite.addTest(TestISOChronology.suite());
-        suite.addTest(TestLenientChronology.suite());
+        //suite.addTest(TestBuddhistChronology.suite());
+        //suite.addTest(TestCopticChronology.suite());
+        //suite.addTest(TestEthiopicChronology.suite());
+        //suite.addTest(TestGJChronology.suite());
+        //suite.addTest(TestGregorianChronology.suite());
+        //suite.addTest(TestIslamicChronology.suite());
+        //suite.addTest(TestJulianChronology.suite());
+        //suite.addTest(TestISOChronology.suite());
+        //suite.addTest(TestLenientChronology.suite());
         suite.addTest(TestGJDate.suite());
+        suite.addTest(TestDays360Chronology.suite());
         
         return suite;
     }
