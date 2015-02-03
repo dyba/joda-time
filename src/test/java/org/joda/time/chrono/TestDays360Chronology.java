@@ -27,13 +27,32 @@ public class TestDays360Chronology extends TestCase {
     }
 
     public static TestSuite suite() {
-        SKIP = 1 * MILLIS_PER_DAY;
         return new TestSuite(TestDays360Chronology.class);
     }
 
     public TestDays360Chronology(String name) {
         super(name);
     }
+
+    private static final int MILLIS_PER_DAY = DateTimeConstants.MILLIS_PER_DAY;
+    private static final DateTimeZone PARIS = DateTimeZone.forID("Europe/Paris");
+    private static final DateTimeZone LONDON = DateTimeZone.forID("Europe/London");
+    private static final DateTimeZone TOKYO = DateTimeZone.forID("Asia/Tokyo");
+    private static final Chronology DAYS360_UTC = Days360Chronology.getInstanceUTC();
+    private static final Chronology GREGORIAN_UTC = GregorianChronology.getInstanceUTC();
+    private static final Chronology ISO_UTC = ISOChronology.getInstanceUTC();
+
+    long y2002days = 365 + 365 + 366 + 365 + 365 + 365 + 366 + 365 + 365 + 365 +
+            366 + 365 + 365 + 365 + 366 + 365 + 365 + 365 + 366 + 365 +
+            365 + 365 + 366 + 365 + 365 + 365 + 366 + 365 + 365 + 365 +
+            366 + 365;
+    // 2002-06-09
+    private long TEST_TIME_NOW =
+            (y2002days + 31L + 28L + 31L + 30L + 31L + 9L -1L) * DateTimeConstants.MILLIS_PER_DAY;
+
+    private DateTimeZone originalDateTimeZone = null;
+    private TimeZone originalTimeZone = null;
+    private Locale originalLocale = null;
 
     protected void setUp() throws Exception {
         DateTimeUtils.setCurrentMillisFixed(TEST_TIME_NOW);
@@ -54,28 +73,6 @@ public class TestDays360Chronology extends TestCase {
         originalTimeZone = null;
         originalLocale = null;
     }
-
-    private static final int MILLIS_PER_DAY = DateTimeConstants.MILLIS_PER_DAY;
-    private static final DateTimeZone PARIS = DateTimeZone.forID("Europe/Paris");
-    private static final DateTimeZone LONDON = DateTimeZone.forID("Europe/London");
-    private static final DateTimeZone TOKYO = DateTimeZone.forID("Asia/Tokyo");
-    private static final Chronology DAYS360_UTC = Days360Chronology.getInstanceUTC();
-    private static final Chronology JULIAN_UTC = JulianChronology.getInstanceUTC();
-    private static final Chronology ISO_UTC = ISOChronology.getInstanceUTC();
-
-    private static long SKIP = 1 * MILLIS_PER_DAY;
-
-    long y2002days = 365 + 365 + 366 + 365 + 365 + 365 + 366 + 365 + 365 + 365 +
-            366 + 365 + 365 + 365 + 366 + 365 + 365 + 365 + 366 + 365 +
-            365 + 365 + 366 + 365 + 365 + 365 + 366 + 365 + 365 + 365 +
-            366 + 365;
-    // 2002-06-09
-    private long TEST_TIME_NOW =
-            (y2002days + 31L + 28L + 31L + 30L + 31L + 9L -1L) * MILLIS_PER_DAY;
-
-    private DateTimeZone originalDateTimeZone = null;
-    private TimeZone originalTimeZone = null;
-    private Locale originalLocale = null;
 
     //-----------------------------------------------------------------------
     public void testFactoryUTC() {
@@ -160,7 +157,7 @@ public class TestDays360Chronology extends TestCase {
         assertEquals(false, days360.years().isPrecise());
         assertEquals(false, days360.weekyears().isPrecise());
         assertEquals(false, days360.months().isPrecise());
-        assertEquals(false, days360.weeks().isPrecise());
+        assertEquals(false, days360.weeks().isPrecise()); // Why is this failing???
         assertEquals(false, days360.days().isPrecise());
         assertEquals(false, days360.halfdays().isPrecise());
         assertEquals(true, days360.hours().isPrecise());
@@ -281,281 +278,12 @@ public class TestDays360Chronology extends TestCase {
     //-----------------------------------------------------------------------
     public void testEpoch() {
         DateTime epoch = new DateTime(1, 1, 1, 0, 0, 0, 0, DAYS360_UTC);
-        assertEquals(new DateTime(284, 8, 29, 0, 0, 0, 0, JULIAN_UTC), epoch.withChronology(JULIAN_UTC));
+        assertEquals(new DateTime(1, 1, 1, 0, 0, 0, 0, GREGORIAN_UTC), epoch.withChronology(GREGORIAN_UTC));
     }
 
     //-----------------------------------------------------------------------
     /**
      * Tests era, year, monthOfYear, dayOfMonth and dayOfWeek.
      */
-    public void testCalendar() {
-        if (TestAll.FAST) {
-            return;
-        }
-        System.out.println("\nTestDays360Chronology.testCalendar");
-        DateTime epoch = new DateTime(1, 1, 1, 0, 0, 0, 0, DAYS360_UTC);
-        long millis = epoch.getMillis();
-        long end = new DateTime(3000, 1, 1, 0, 0, 0, 0, ISO_UTC).getMillis();
-        DateTimeField dayOfWeek = DAYS360_UTC.dayOfWeek();
-        DateTimeField dayOfYear = DAYS360_UTC.dayOfYear();
-        DateTimeField dayOfMonth = DAYS360_UTC.dayOfMonth();
-        DateTimeField monthOfYear = DAYS360_UTC.monthOfYear();
-        DateTimeField year = DAYS360_UTC.year();
-        DateTimeField yearOfEra = DAYS360_UTC.yearOfEra();
-        DateTimeField era = DAYS360_UTC.era();
-        int expectedDOW = new DateTime(284, 8, 29, 0, 0, 0, 0, JULIAN_UTC).getDayOfWeek();
-        int expectedDOY = 1;
-        int expectedDay = 1;
-        int expectedMonth = 1;
-        int expectedYear = 1;
-        while (millis < end) {
-            int dowValue = dayOfWeek.get(millis);
-            int doyValue = dayOfYear.get(millis);
-            int dayValue = dayOfMonth.get(millis);
-            int monthValue = monthOfYear.get(millis);
-            int yearValue = year.get(millis);
-            int yearOfEraValue = yearOfEra.get(millis);
-            int monthLen = dayOfMonth.getMaximumValue(millis);
-            if (monthValue < 1 || monthValue > 13) {
-                fail("Bad month: " + millis);
-            }
-
-            // test era
-            assertEquals(1, era.get(millis));
-            assertEquals("AM", era.getAsText(millis));
-            assertEquals("AM", era.getAsShortText(millis));
-
-            // test date
-            assertEquals(expectedYear, yearValue);
-            assertEquals(expectedYear, yearOfEraValue);
-            assertEquals(expectedMonth, monthValue);
-            assertEquals(expectedDay, dayValue);
-            assertEquals(expectedDOW, dowValue);
-            assertEquals(expectedDOY, doyValue);
-
-            // test leap year
-            assertEquals(yearValue % 4 == 3, year.isLeap(millis));
-
-            // test month length
-            if (monthValue == 13) {
-                assertEquals(yearValue % 4 == 3, monthOfYear.isLeap(millis));
-                if (yearValue % 4 == 3) {
-                    assertEquals(6, monthLen);
-                } else {
-                    assertEquals(5, monthLen);
-                }
-            } else {
-                assertEquals(30, monthLen);
-            }
-
-            // recalculate date
-            expectedDOW = (((expectedDOW + 1) - 1) % 7) + 1;
-            expectedDay++;
-            expectedDOY++;
-            if (expectedDay == 31 && expectedMonth < 13) {
-                expectedDay = 1;
-                expectedMonth++;
-            } else if (expectedMonth == 13) {
-                if (expectedYear % 4 == 3 && expectedDay == 7) {
-                    expectedDay = 1;
-                    expectedMonth = 1;
-                    expectedYear++;
-                    expectedDOY = 1;
-                } else if (expectedYear % 4 != 3 && expectedDay == 6) {
-                    expectedDay = 1;
-                    expectedMonth = 1;
-                    expectedYear++;
-                    expectedDOY = 1;
-                }
-            }
-            millis += SKIP;
-        }
-    }
-
-    public void testSampleDate() {
-        DateTime dt = new DateTime(2004, 6, 9, 0, 0, 0, 0, ISO_UTC).withChronology(DAYS360_UTC);
-        assertEquals(18, dt.getCenturyOfEra());  // TODO confirm
-        assertEquals(20, dt.getYearOfCentury());
-        assertEquals(1720, dt.getYearOfEra());
-
-        assertEquals(1720, dt.getYear());
-        DateTime.Property fld = dt.year();
-        assertEquals(false, fld.isLeap());
-        assertEquals(0, fld.getLeapAmount());
-        assertEquals(DurationFieldType.days(), fld.getLeapDurationField().getType());
-        assertEquals(new DateTime(1721, 10, 2, 0, 0, 0, 0, DAYS360_UTC), fld.addToCopy(1));
-
-        assertEquals(10, dt.getMonthOfYear());
-        fld = dt.monthOfYear();
-        assertEquals(false, fld.isLeap());
-        assertEquals(0, fld.getLeapAmount());
-        assertEquals(DurationFieldType.days(), fld.getLeapDurationField().getType());
-        assertEquals(1, fld.getMinimumValue());
-        assertEquals(1, fld.getMinimumValueOverall());
-        assertEquals(13, fld.getMaximumValue());
-        assertEquals(13, fld.getMaximumValueOverall());
-        assertEquals(new DateTime(1721, 1, 2, 0, 0, 0, 0, DAYS360_UTC), fld.addToCopy(4));
-        assertEquals(new DateTime(1720, 1, 2, 0, 0, 0, 0, DAYS360_UTC), fld.addWrapFieldToCopy(4));
-
-        assertEquals(2, dt.getDayOfMonth());
-        fld = dt.dayOfMonth();
-        assertEquals(false, fld.isLeap());
-        assertEquals(0, fld.getLeapAmount());
-        assertEquals(null, fld.getLeapDurationField());
-        assertEquals(1, fld.getMinimumValue());
-        assertEquals(1, fld.getMinimumValueOverall());
-        assertEquals(30, fld.getMaximumValue());
-        assertEquals(30, fld.getMaximumValueOverall());
-        assertEquals(new DateTime(1720, 10, 3, 0, 0, 0, 0, DAYS360_UTC), fld.addToCopy(1));
-
-        assertEquals(DateTimeConstants.WEDNESDAY, dt.getDayOfWeek());
-        fld = dt.dayOfWeek();
-        assertEquals(false, fld.isLeap());
-        assertEquals(0, fld.getLeapAmount());
-        assertEquals(null, fld.getLeapDurationField());
-        assertEquals(1, fld.getMinimumValue());
-        assertEquals(1, fld.getMinimumValueOverall());
-        assertEquals(7, fld.getMaximumValue());
-        assertEquals(7, fld.getMaximumValueOverall());
-        assertEquals(new DateTime(1720, 10, 3, 0, 0, 0, 0, DAYS360_UTC), fld.addToCopy(1));
-
-        assertEquals(9 * 30 + 2, dt.getDayOfYear());
-        fld = dt.dayOfYear();
-        assertEquals(false, fld.isLeap());
-        assertEquals(0, fld.getLeapAmount());
-        assertEquals(null, fld.getLeapDurationField());
-        assertEquals(1, fld.getMinimumValue());
-        assertEquals(1, fld.getMinimumValueOverall());
-        assertEquals(365, fld.getMaximumValue());
-        assertEquals(366, fld.getMaximumValueOverall());
-        assertEquals(new DateTime(1720, 10, 3, 0, 0, 0, 0, DAYS360_UTC), fld.addToCopy(1));
-
-        assertEquals(0, dt.getHourOfDay());
-        assertEquals(0, dt.getMinuteOfHour());
-        assertEquals(0, dt.getSecondOfMinute());
-        assertEquals(0, dt.getMillisOfSecond());
-    }
-
-    public void testSampleDateWithZone() {
-        DateTime dt = new DateTime(2004, 6, 9, 12, 0, 0, 0, PARIS).withChronology(DAYS360_UTC);
-        assertEquals(1720, dt.getYear());
-        assertEquals(1720, dt.getYearOfEra());
-        assertEquals(10, dt.getMonthOfYear());
-        assertEquals(2, dt.getDayOfMonth());
-        assertEquals(10, dt.getHourOfDay());  // PARIS is UTC+2 in summer (12-2=10)
-        assertEquals(0, dt.getMinuteOfHour());
-        assertEquals(0, dt.getSecondOfMinute());
-        assertEquals(0, dt.getMillisOfSecond());
-    }
-
-    public void testDurationYear() {
-        // Leap 1723
-        DateTime dt20 = new DateTime(1720, 10, 2, 0, 0, 0, 0, DAYS360_UTC);
-        DateTime dt21 = new DateTime(1721, 10, 2, 0, 0, 0, 0, DAYS360_UTC);
-        DateTime dt22 = new DateTime(1722, 10, 2, 0, 0, 0, 0, DAYS360_UTC);
-        DateTime dt23 = new DateTime(1723, 10, 2, 0, 0, 0, 0, DAYS360_UTC);
-        DateTime dt24 = new DateTime(1724, 10, 2, 0, 0, 0, 0, DAYS360_UTC);
-
-        DurationField fld = dt20.year().getDurationField();
-        assertEquals(DAYS360_UTC.years(), fld);
-        assertEquals(1L * 365L * MILLIS_PER_DAY, fld.getMillis(1, dt20.getMillis()));
-        assertEquals(2L * 365L * MILLIS_PER_DAY, fld.getMillis(2, dt20.getMillis()));
-        assertEquals(3L * 365L * MILLIS_PER_DAY, fld.getMillis(3, dt20.getMillis()));
-        assertEquals((4L * 365L + 1L) * MILLIS_PER_DAY, fld.getMillis(4, dt20.getMillis()));
-
-        assertEquals(((4L * 365L + 1L) * MILLIS_PER_DAY) / 4, fld.getMillis(1));
-        assertEquals(((4L * 365L + 1L) * MILLIS_PER_DAY) / 2, fld.getMillis(2));
-
-        assertEquals(1L * 365L * MILLIS_PER_DAY, fld.getMillis(1L, dt20.getMillis()));
-        assertEquals(2L * 365L * MILLIS_PER_DAY, fld.getMillis(2L, dt20.getMillis()));
-        assertEquals(3L * 365L * MILLIS_PER_DAY, fld.getMillis(3L, dt20.getMillis()));
-        assertEquals((4L * 365L + 1L) * MILLIS_PER_DAY, fld.getMillis(4L, dt20.getMillis()));
-
-        assertEquals(((4L * 365L + 1L) * MILLIS_PER_DAY) / 4, fld.getMillis(1L));
-        assertEquals(((4L * 365L + 1L) * MILLIS_PER_DAY) / 2, fld.getMillis(2L));
-
-        assertEquals(((4L * 365L + 1L) * MILLIS_PER_DAY) / 4, fld.getUnitMillis());
-
-        assertEquals(0, fld.getValue(1L * 365L * MILLIS_PER_DAY - 1L, dt20.getMillis()));
-        assertEquals(1, fld.getValue(1L * 365L * MILLIS_PER_DAY, dt20.getMillis()));
-        assertEquals(1, fld.getValue(1L * 365L * MILLIS_PER_DAY + 1L, dt20.getMillis()));
-        assertEquals(1, fld.getValue(2L * 365L * MILLIS_PER_DAY - 1L, dt20.getMillis()));
-        assertEquals(2, fld.getValue(2L * 365L * MILLIS_PER_DAY, dt20.getMillis()));
-        assertEquals(2, fld.getValue(2L * 365L * MILLIS_PER_DAY + 1L, dt20.getMillis()));
-        assertEquals(2, fld.getValue(3L * 365L * MILLIS_PER_DAY - 1L, dt20.getMillis()));
-        assertEquals(3, fld.getValue(3L * 365L * MILLIS_PER_DAY, dt20.getMillis()));
-        assertEquals(3, fld.getValue(3L * 365L * MILLIS_PER_DAY + 1L, dt20.getMillis()));
-        assertEquals(3, fld.getValue((4L * 365L + 1L) * MILLIS_PER_DAY - 1L, dt20.getMillis()));
-        assertEquals(4, fld.getValue((4L * 365L + 1L) * MILLIS_PER_DAY, dt20.getMillis()));
-        assertEquals(4, fld.getValue((4L * 365L + 1L) * MILLIS_PER_DAY + 1L, dt20.getMillis()));
-
-        assertEquals(dt21.getMillis(), fld.add(dt20.getMillis(), 1));
-        assertEquals(dt22.getMillis(), fld.add(dt20.getMillis(), 2));
-        assertEquals(dt23.getMillis(), fld.add(dt20.getMillis(), 3));
-        assertEquals(dt24.getMillis(), fld.add(dt20.getMillis(), 4));
-
-        assertEquals(dt21.getMillis(), fld.add(dt20.getMillis(), 1L));
-        assertEquals(dt22.getMillis(), fld.add(dt20.getMillis(), 2L));
-        assertEquals(dt23.getMillis(), fld.add(dt20.getMillis(), 3L));
-        assertEquals(dt24.getMillis(), fld.add(dt20.getMillis(), 4L));
-    }
-
-    public void testDurationMonth() {
-        // Leap 1723
-        DateTime dt11 = new DateTime(1723, 11, 2, 0, 0, 0, 0, DAYS360_UTC);
-        DateTime dt12 = new DateTime(1723, 12, 2, 0, 0, 0, 0, DAYS360_UTC);
-        DateTime dt13 = new DateTime(1723, 13, 2, 0, 0, 0, 0, DAYS360_UTC);
-        DateTime dt01 = new DateTime(1724, 1, 2, 0, 0, 0, 0, DAYS360_UTC);
-
-        DurationField fld = dt11.monthOfYear().getDurationField();
-        assertEquals(DAYS360_UTC.months(), fld);
-        assertEquals(1L * 30L * MILLIS_PER_DAY, fld.getMillis(1, dt11.getMillis()));
-        assertEquals(2L * 30L * MILLIS_PER_DAY, fld.getMillis(2, dt11.getMillis()));
-        assertEquals((2L * 30L + 6L) * MILLIS_PER_DAY, fld.getMillis(3, dt11.getMillis()));
-        assertEquals((3L * 30L + 6L) * MILLIS_PER_DAY, fld.getMillis(4, dt11.getMillis()));
-
-        assertEquals(1L * 30L * MILLIS_PER_DAY, fld.getMillis(1));
-        assertEquals(2L * 30L * MILLIS_PER_DAY, fld.getMillis(2));
-        assertEquals(13L * 30L * MILLIS_PER_DAY, fld.getMillis(13));
-
-        assertEquals(1L * 30L * MILLIS_PER_DAY, fld.getMillis(1L, dt11.getMillis()));
-        assertEquals(2L * 30L * MILLIS_PER_DAY, fld.getMillis(2L, dt11.getMillis()));
-        assertEquals((2L * 30L + 6L) * MILLIS_PER_DAY, fld.getMillis(3L, dt11.getMillis()));
-        assertEquals((3L * 30L + 6L) * MILLIS_PER_DAY, fld.getMillis(4L, dt11.getMillis()));
-
-        assertEquals(1L * 30L * MILLIS_PER_DAY, fld.getMillis(1L));
-        assertEquals(2L * 30L * MILLIS_PER_DAY, fld.getMillis(2L));
-        assertEquals(13L * 30L * MILLIS_PER_DAY, fld.getMillis(13L));
-
-        assertEquals(0, fld.getValue(1L * 30L * MILLIS_PER_DAY - 1L, dt11.getMillis()));
-        assertEquals(1, fld.getValue(1L * 30L * MILLIS_PER_DAY, dt11.getMillis()));
-        assertEquals(1, fld.getValue(1L * 30L * MILLIS_PER_DAY + 1L, dt11.getMillis()));
-        assertEquals(1, fld.getValue(2L * 30L * MILLIS_PER_DAY - 1L, dt11.getMillis()));
-        assertEquals(2, fld.getValue(2L * 30L * MILLIS_PER_DAY, dt11.getMillis()));
-        assertEquals(2, fld.getValue(2L * 30L * MILLIS_PER_DAY + 1L, dt11.getMillis()));
-        assertEquals(2, fld.getValue((2L * 30L + 6L) * MILLIS_PER_DAY - 1L, dt11.getMillis()));
-        assertEquals(3, fld.getValue((2L * 30L + 6L) * MILLIS_PER_DAY, dt11.getMillis()));
-        assertEquals(3, fld.getValue((2L * 30L + 6L) * MILLIS_PER_DAY + 1L, dt11.getMillis()));
-        assertEquals(3, fld.getValue((3L * 30L + 6L) * MILLIS_PER_DAY - 1L, dt11.getMillis()));
-        assertEquals(4, fld.getValue((3L * 30L + 6L) * MILLIS_PER_DAY, dt11.getMillis()));
-        assertEquals(4, fld.getValue((3L * 30L + 6L) * MILLIS_PER_DAY + 1L, dt11.getMillis()));
-
-        assertEquals(dt12.getMillis(), fld.add(dt11.getMillis(), 1));
-        assertEquals(dt13.getMillis(), fld.add(dt11.getMillis(), 2));
-        assertEquals(dt01.getMillis(), fld.add(dt11.getMillis(), 3));
-
-        assertEquals(dt12.getMillis(), fld.add(dt11.getMillis(), 1L));
-        assertEquals(dt13.getMillis(), fld.add(dt11.getMillis(), 2L));
-        assertEquals(dt01.getMillis(), fld.add(dt11.getMillis(), 3L));
-    }
-
-    public void testNotLeapOnLeapYear() {
-        Chronology chrono = Days360Chronology.getInstance();
-        DateTime dt = new DateTime(2000, 1, 1, 0, 0, chrono);
-        assertEquals(false, dt.year().isLeap());
-        assertEquals(false, dt.monthOfYear().isLeap());
-        assertEquals(false, dt.dayOfMonth().isLeap());
-        assertEquals(false, dt.dayOfYear().isLeap());
-    }
 
 }
