@@ -294,12 +294,12 @@ public class TestDays360Chronology extends TestCase {
         Interval interval2 = new Interval(dt0101, dt1231);
         Days days2 = Days.daysIn(interval2);
 
-        assertEquals(360, days2);
+        assertEquals(360, days2.getDays());
 
         Interval interval3 = new Interval(dt0101, dt0201);
         Days days3 = Days.daysIn(interval3);
 
-        assertEquals(30, interval3);
+        assertEquals(30, days3.getDays());
     }
 
 }
