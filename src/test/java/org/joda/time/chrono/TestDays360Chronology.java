@@ -3,15 +3,9 @@ package org.joda.time.chrono;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
-import org.joda.time.Chronology;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeConstants;
-import org.joda.time.DateTimeField;
-import org.joda.time.DateTimeUtils;
-import org.joda.time.DateTimeZone;
-import org.joda.time.DurationField;
-import org.joda.time.DurationFieldType;
+import org.joda.time.*;
 
+import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
@@ -285,5 +279,27 @@ public class TestDays360Chronology extends TestCase {
     /**
      * Tests era, year, monthOfYear, dayOfMonth and dayOfWeek.
      */
+
+    public void testIgnoresLastDayOfTheMonthInCalculations() {
+        DateTime dt0131 = new DateTime(2008, 1, 30, 0, 0, 0, 0, DAYS360_UTC);
+        DateTime dt0201 = new DateTime(2008, 2, 1, 0, 0, 0, 0, DAYS360_UTC);
+        DateTime dt0101 = new DateTime(2008, 1, 1, 0, 0, 0, 0, DAYS360_UTC);
+        DateTime dt1231 = new DateTime(2008, 12, 31, 0, 0, 0, 0, DAYS360_UTC);
+
+        Interval interval1 = new Interval(dt0131, dt0201);
+        Days days1 = Days.daysIn(interval1);
+
+        assertEquals(1, days1.getDays());
+
+        Interval interval2 = new Interval(dt0101, dt1231);
+        Days days2 = Days.daysIn(interval2);
+
+        assertEquals(360, days2);
+
+        Interval interval3 = new Interval(dt0101, dt0201);
+        Days days3 = Days.daysIn(interval3);
+
+        assertEquals(30, interval3);
+    }
 
 }
